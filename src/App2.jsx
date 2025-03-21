@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 
 import { FaShare } from "react-icons/fa";
-import {  FaPlane, FaWalking, FaStar, FaRegStar  , FaUtensils, FaHotel, FaEdit, FaSave, FaTimes ,FaTrash, FaPlus, FaArrowUp, FaArrowDown} from "react-icons/fa";
+import { FaPlane, FaWalking, FaStar, FaRegStar, FaUtensils, FaHotel, FaEdit, FaSave, FaTimes, FaTrash, FaPlus, FaArrowUp, FaArrowDown } from "react-icons/fa";
 import { useLocation } from "react-router-dom";
 
 
@@ -501,70 +501,78 @@ export function TableSummary({ updatedItinerary, onUpdate }) {
 }
 
 
+
+
+
 export function Policies({ updatedItinerary, onUpdate }) {
   const [editingIndex, setEditingIndex] = useState(null);
-  const [newHeading, setNewHeading] = useState("");
-  const [newParagraph, setNewParagraph] = useState("");
+  const [formData, setFormData] = useState({ heading: "", paragraph: "" });
+
+  // Handle input change
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
 
   // Add a new policy
   const handleAddPolicy = () => {
-    if (newHeading.trim() && newParagraph.trim()) {
+    if (formData.heading.trim() && formData.paragraph.trim()) {
       const updatedPolicies = [
         ...(updatedItinerary.policies || []),
-        { heading: newHeading, paragraph: newParagraph },
+        { heading: formData.heading, paragraph: formData.paragraph },
       ];
-      onUpdate({ ...updatedItinerary, policies: updatedPolicies }); // Update the root object
-      setNewHeading("");
-      setNewParagraph("");
+      onUpdate({ ...updatedItinerary, policies: updatedPolicies });
+      setFormData({ heading: "", paragraph: "" });
     }
   };
 
   // Edit a policy
   const handleEditPolicy = (index) => {
     setEditingIndex(index);
-    setNewHeading(updatedItinerary.policies[index].heading);
-    setNewParagraph(updatedItinerary.policies[index].paragraph);
+    setFormData(updatedItinerary.policies[index]); // Populate the form with existing values
   };
 
   // Save edited policy
-  const handleSavePolicy = (index) => {
-    if (newHeading.trim() && newParagraph.trim()) {
+  const handleSavePolicy = () => {
+    if (formData.heading.trim() && formData.paragraph.trim()) {
       const updatedPolicies = [...updatedItinerary.policies];
-      updatedPolicies[index] = { heading: newHeading, paragraph: newParagraph };
-      onUpdate({ ...updatedItinerary, policies: updatedPolicies }); // Update the root object
+      updatedPolicies[editingIndex] = { ...formData };
+
+      onUpdate({ ...updatedItinerary, policies: updatedPolicies });
       setEditingIndex(null);
-      setNewHeading("");
-      setNewParagraph("");
+      setFormData({ heading: "", paragraph: "" });
     }
   };
 
   // Delete a policy
   const handleDeletePolicy = (index) => {
     const updatedPolicies = updatedItinerary.policies.filter((_, i) => i !== index);
-    onUpdate({ ...updatedItinerary, policies: updatedPolicies }); // Update the root object
+    onUpdate({ ...updatedItinerary, policies: updatedPolicies });
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md ">
+    <div className="bg-white p-6 rounded-lg shadow-md">
       <h2 className="text-2xl font-bold mb-4">Policies</h2>
 
       {/* Add/Edit Policy Form */}
       <div className="mb-6">
         <input
           type="text"
-          value={newHeading}
-          onChange={(e) => setNewHeading(e.target.value)}
+          name="heading"
+          value={formData.heading}
+          onChange={handleChange}
           placeholder="Enter policy heading"
           className="border border-gray-300 rounded-md p-2 w-full mb-2"
         />
         <textarea
-          value={newParagraph}
-          onChange={(e) => setNewParagraph(e.target.value)}
+          name="paragraph"
+          value={formData.paragraph}
+          onChange={handleChange}
           placeholder="Enter policy paragraph"
           className="border border-gray-300 rounded-md p-2 w-full mb-2"
         />
+        <div className="flex gap-1">
         <button
-          onClick={editingIndex !== null ? () => handleSavePolicy(editingIndex) : handleAddPolicy}
+          onClick={editingIndex !== null ? handleSavePolicy : handleAddPolicy}
           className="bg-blue-600 text-white flex gap-1 items-center px-2 text-[11px] py-2 rounded-md hover:bg-blue-700"
         >
           {editingIndex !== null ? <FaSave /> : <FaPlus />}
@@ -574,19 +582,20 @@ export function Policies({ updatedItinerary, onUpdate }) {
           <button
             onClick={() => {
               setEditingIndex(null);
-              setNewHeading("");
-              setNewParagraph("");
+              setFormData({ heading: "", paragraph: "" });
             }}
-            className="bg-gray-500 text-white  px-4 py-2 rounded-md hover:bg-gray-600 ml-2"
+            className="bg-gray-500 text-white px-4 text-[11px]  flex gap-1 items-center py-2 rounded-md hover:bg-gray-600 ml-2"
           >
             <FaTimes /> Cancel
           </button>
         )}
+        </div>
+      
       </div>
 
       {/* Display Policies */}
       <div className="space-y-4">
-        {updatedItinerary.policies?.map((policy, index) => (
+        {(updatedItinerary.policies || []).map((policy, index) => (
           <div key={index} className="border border-gray-200 rounded-lg p-4">
             <div className="flex justify-between items-center mb-2">
               <h3 className="text-xl font-semibold">{policy.heading}</h3>
@@ -614,24 +623,160 @@ export function Policies({ updatedItinerary, onUpdate }) {
 }
 
 
-export function TripSummary({updatedItinerary,setActiveTab}) {
+
+
+
+export function TripSummary({ updatedItinerary, setActiveTab }) {
+  // State for tracking editable fields
+  const [isEditingFlightTransfer, setIsEditingFlightTransfer] = useState(false);
+  const [isEditingHotelInfo, setIsEditingHotelInfo] = useState(false);
+  const [isEditingDayInfo, setIsEditingDayInfo] = useState(false);
+  
+  const [flightTransfer, setFlightTransfer] = useState('2 FLIGHTS & 2 TRANSFERS'); // Default value
+  const [hotelInfo, setHotelInfo] = useState('7 HOTELS'); // Default value
+  const [dayInfo, setDayInfo] = useState(updatedItinerary?.duration); // Default value
+
+  // Handle Edit click for Flight & Transfer Info
+  const handleEditFlightTransferClick = () => {
+    setIsEditingFlightTransfer(true);
+  };
+
+  // Handle Edit click for Hotel Info
+  const handleEditHotelClick = () => {
+    setIsEditingHotelInfo(true);
+  };
+
+  // Handle Edit click for Day Info
+  const handleEditDayClick = () => {
+    setIsEditingDayInfo(true);
+  };
+
+  // Handle change in Flight & Transfer Info
+  const handleFlightTransferChange = (e) => {
+    setFlightTransfer(e.target.value);
+  };
+
+  // Handle change in Hotel Info
+  const handleHotelInfoChange = (e) => {
+    setHotelInfo(e.target.value);
+  };
+
+  // Handle change in Day Info
+  const handleDayInfoChange = (e) => {
+    setDayInfo(e.target.value);
+  };
+
+  // Handle save on blur or when 'Enter' is pressed for Flight & Transfer Info
+  const handleFlightTransferBlur = () => {
+    setIsEditingFlightTransfer(false);
+  };
+
+  // Handle save on blur or when 'Enter' is pressed for Hotel Info
+  const handleHotelInfoBlur = () => {
+    setIsEditingHotelInfo(false);
+  };
+
+  // Handle save on blur or when 'Enter' is pressed for Day Info
+  const handleDayInfoBlur = () => {
+    setIsEditingDayInfo(false);
+  };
+
+  // Handle pressing "Enter" to save for Flight & Transfer Info
+  const handleFlightTransferKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      setIsEditingFlightTransfer(false);
+    }
+  };
+
+  // Handle pressing "Enter" to save for Hotel Info
+  const handleHotelInfoKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      setIsEditingHotelInfo(false);
+    }
+  };
+
+  // Handle pressing "Enter" to save for Day Info
+  const handleDayInfoKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      setIsEditingDayInfo(false);
+    }
+  };
+
   return (
     <div className="bg-blue-50 py-4 flex items-center justify-around text-gray-800 text-sm font-medium">
       {/* Blue Outlined Button */}
-      <button className="px-4 py-1 border border-blue-500 text-blue-600 rounded-full font-semibold">
-        <span className="text-blue-600 font-bold">{updatedItinerary?.duration}</span>    PLAN
-      </button>
 
-      {/* Flight & Transfer Info */}
-      <span>
-        <span className="font-semibold">2 FLIGHTS</span> & <span className="font-semibold">2 TRANSFERS</span>
+      <span className="flex items-center space-x-2 ml-4">
+        {isEditingDayInfo ? (
+          <input
+            type="text"
+            value={dayInfo}
+            onChange={handleDayInfoChange}
+            onBlur={handleDayInfoBlur}
+            onKeyDown={handleDayInfoKeyPress}
+            className="border-b border-blue-500 px-2 py-1 text-gray-700 focus:outline-none"
+            autoFocus
+          />
+        ) : (
+          <>
+            <button className="px-4 py-1 border border-blue-500 text-blue-600 rounded-full font-semibold">
+        <span className="text-blue-600 font-bold">{dayInfo}</span> PLAN
+      </button>
+            <button onClick={handleEditDayClick} className="text-blue-600 hover:text-blue-800">
+              <FaEdit size={16} />
+            </button>
+           
+          </>
+        )}
+      </span>
+     
+
+      {/* Editable Flight & Transfer Info */}
+      <span className="flex items-center space-x-2">
+        {isEditingFlightTransfer ? (
+          <input
+            type="text"
+            value={flightTransfer}
+            onChange={handleFlightTransferChange}
+            onBlur={handleFlightTransferBlur}
+            onKeyDown={handleFlightTransferKeyPress}
+            className="border-b border-blue-500 px-2 py-1 text-gray-700 focus:outline-none"
+            autoFocus
+          />
+        ) : (
+          <>
+            <span className="font-semibold">{flightTransfer}</span>
+            <button onClick={handleEditFlightTransferClick} className="text-blue-600 hover:text-blue-800">
+              <FaEdit size={16} />
+            </button>
+          </>
+        )}
       </span>
 
-      {/* Hotel Info */}
-      <span className="font-semibold"  onClick={()=>{setActiveTab("hotels")}}>7 HOTELS</span>
+      {/* Editable Hotel Info */}
+      <span className="flex items-center space-x-2 ml-4">
+        {isEditingHotelInfo ? (
+          <input
+            type="text"
+            value={hotelInfo}
+            onChange={handleHotelInfoChange}
+            onBlur={handleHotelInfoBlur}
+            onKeyDown={handleHotelInfoKeyPress}
+            className="border-b border-blue-500 px-2 py-1 text-gray-700 focus:outline-none"
+            autoFocus
+          />
+        ) : (
+          <>
+            <span className="font-semibold" onClick={() => { setActiveTab("hotels") }}>{hotelInfo}</span>
+            <button onClick={handleEditHotelClick} className="text-blue-600 hover:text-blue-800">
+              <FaEdit size={16} />
+            </button>
+          </>
+        )}
+      </span>
 
-      {/* Meal Info */}
-      {/* <span className="font-semibold">12 MEALS</span> */}
+      {/* Editable Day Info */}
+     
     </div>
   );
 }
@@ -642,7 +787,21 @@ export function PlanContent({ updatedItinerary, setUpdatedItinerary, onThemeEdit
   const [editingActivityIndex, setEditingActivityIndex] = useState(null);
   const [editingThemeIndex, setEditingThemeIndex] = useState(null);
   const [themeInput, setThemeInput] = useState("");
-
+  const [isAddDayPopupOpen, setIsAddDayPopupOpen] = useState(false);
+  const [newDayData, setNewDayData] = useState({
+    theme: "",
+    tripsummary: "",
+    activities: [{
+      "time": "",
+      "description": "",
+      "Hotels": "",
+      "TRANSFER": "",
+      "distance": "",
+      "notes": "",
+      "places": [{ name: "", imageUrl: "" }],
+    }],
+  });
+  
   // Handle edit button click for activities
   const handleEdit = (dayIndex, activityIndex) => {
     setEditingIndex(dayIndex);
@@ -677,19 +836,336 @@ export function PlanContent({ updatedItinerary, setUpdatedItinerary, onThemeEdit
     setEditingThemeIndex(null);
   };
 
-  // Move a day up or down
-  const moveDay = (fromIndex, toIndex) => {
-    if (toIndex < 0 || toIndex >= updatedItinerary.days.length) return; // Prevent out-of-bounds movement
-    const newDays = [...updatedItinerary.days];
-    [newDays[fromIndex], newDays[toIndex]] = [newDays[toIndex], newDays[fromIndex]]; // Swap positions
-    setUpdatedItinerary({ ...updatedItinerary, days: newDays });
+  // Open the "Add Day" popup
+  const openAddDayPopup = () => {
+    setIsAddDayPopupOpen(true);
+  };
+
+  // Close the "Add Day" popup
+  const closeAddDayPopup = () => {
+    setIsAddDayPopupOpen(false);
+    setNewDayData({
+      theme: "",
+      tripsummary: "",
+      activities: [{
+        "time": "",
+        "description": "",
+        "Hotels": "",
+        "TRANSFER": "",
+        "distance": "",
+        "notes": "",
+        "places": [{ name: "", imageUrl: "" }],
+      }],
+    }); // Reset form data
+  };
+
+  // Handle form input changes
+  const handleNewDayInputChange = (e) => {
+    const { name, value } = e.target;
+    setNewDayData({ ...newDayData, [name]: value });
+  };
+
+  // Handle form submission
+  const handleAddDaySubmit = (e) => {
+    e.preventDefault();
+
+    // Validate the form data
+    if (!newDayData.theme.trim()) {
+      alert("Please enter a theme for the day.");
+      return;
+    }
+
+    // Add the new day to the itinerary
+    const updatedDays = [...updatedItinerary.days, newDayData];
+
+    const durationValue = updatedDays.length;
+    setUpdatedItinerary({ ...updatedItinerary, days: updatedDays, duration: durationValue });
+
+    // Close the popup and reset the form
+    closeAddDayPopup();
+  };
+
+  const handleInputChange = (e, index, field) => {
+    const { value } = e.target;
+
+    setNewDayData((prevState) => {
+      const updatedActivities = [...prevState.activities];
+      updatedActivities[index] = {
+        ...updatedActivities[index],
+        [field]: value,
+      };
+      return {
+        ...prevState,
+        activities: updatedActivities,
+      };
+    });
+  };
+
+  const handlePlaceChange = (e, activityIndex, placeIndex, field) => {
+    const { value } = e.target;
+
+    setNewDayData((prevState) => {
+      const updatedActivities = [...prevState.activities];
+      updatedActivities[activityIndex].places[placeIndex] = {
+        ...updatedActivities[activityIndex].places[placeIndex],
+        [field]: value,
+      };
+
+      return {
+        ...prevState,
+        activities: updatedActivities,
+      };
+    });
+  };
+
+  // Function to add more places to an activity
+  const handleAddMorePlace = (activityIndex) => {
+    setNewDayData((prevState) => {
+      const updatedActivities = [...prevState.activities];
+
+      // Add a new place object with empty values to the selected activity
+      updatedActivities[activityIndex].places.push({
+        name: "",
+        imageUrl: "",
+      });
+
+      return {
+        ...prevState,
+        activities: updatedActivities,
+      };
+    });
+  };
+
+  // Add Activity functionality
+  const handleAddActivity = () => {
+    setNewDayData((prevState) => {
+      const updatedActivities = [...prevState.activities, {
+        time: "",
+        description: "",
+        Hotels: "",
+        TRANSFER: "",
+        distance: "",
+        notes: "",
+        places: [{ name: "", imageUrl: "" }],
+      }];
+      
+      return { ...prevState, activities: updatedActivities };
+    });
+  };
+
+  // Move day up
+  const moveDayUp = (index) => {
+    if (index > 0) {
+      const updatedDays = [...updatedItinerary.days];
+      const dayToMove = updatedDays.splice(index, 1)[0];
+      updatedDays.splice(index - 1, 0, dayToMove);
+      setUpdatedItinerary({ ...updatedItinerary, days: updatedDays });
+    }
+  };
+
+  // Move day down
+  const moveDayDown = (index) => {
+    if (index < updatedItinerary.days.length - 1) {
+      const updatedDays = [...updatedItinerary.days];
+      const dayToMove = updatedDays.splice(index, 1)[0];
+      updatedDays.splice(index + 1, 0, dayToMove);
+      setUpdatedItinerary({ ...updatedItinerary, days: updatedDays });
+    }
+  };
+
+  // Function to delete an activity
+  const handleDeleteActivity = (dayIndex, activityIndex) => {
+    const updatedDays = [...updatedItinerary.days];
+    updatedDays[dayIndex].activities.splice(activityIndex, 1); // Remove the activity
+    setUpdatedItinerary({ ...updatedItinerary, days: updatedDays });
+  };
+
+  // Function to delete an entire day
+  const handleDeleteDay = (dayIndex) => {
+    const updatedDays = [...updatedItinerary.days];
+    updatedDays.splice(dayIndex, 1); // Remove the entire day
+    setUpdatedItinerary({ ...updatedItinerary, days: updatedDays });
   };
 
   return (
     <>
+      {/* Add Day Button */}
+      <div className="flex justify-end p-4">
+        <button
+          onClick={openAddDayPopup}
+          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center space-x-2"
+        >
+          <FaPlus />
+          <span>Add Day</span>
+        </button>
+      </div>
+
+      {/* Add Day Popup */}
+      {isAddDayPopupOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white p-6 rounded-lg shadow-md w-full max-w-md h-[300px] overflow-auto z-50">
+            <h2 className="text-xl font-bold mb-4">Add New Day</h2>
+            <form onSubmit={handleAddDaySubmit}>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700">Theme</label>
+                <input
+                  type="text"
+                  name="theme"
+                  value={newDayData.theme}
+                  onChange={handleNewDayInputChange}
+                  className="border border-gray-300 rounded-md p-2 w-full"
+                  required
+                />
+              </div>
+
+              {/* Activity Input Fields */}
+              {
+                newDayData.activities.map((activity, index) => (
+                  <div key={index} className="mb-6">
+
+                    {/* Time Input */}
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-700">Time</label>
+                      <textarea
+                        name="time"
+                        value={activity.time}
+                        onChange={(e) => handleInputChange(e, index, "time")}
+                        className="border border-gray-300 rounded-md p-2 w-full"
+                        placeholder="Enter activity time"
+                        required
+                      />
+                    </div>
+
+                    {/* Description Input */}
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-700">Description</label>
+                      <textarea
+                        name="description"
+                        value={activity.description}
+                        onChange={(e) => handleInputChange(e, index, "description")}
+                        className="border border-gray-300 rounded-md p-2 w-full"
+                        placeholder="Enter description of the activity"
+                        required
+                      />
+                    </div>
+
+                    {/* Hotels Input */}
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-700">Hotels</label>
+                      <textarea
+                        name="Hotels"
+                        value={activity.Hotels}
+                        onChange={(e) => handleInputChange(e, index, "Hotels")}
+                        className="border border-gray-300 rounded-md p-2 w-full"
+                        placeholder="Enter hotels"
+                        required
+                      />
+                    </div>
+
+                    {/* Transfer Input */}
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-700">Transfer</label>
+                      <textarea
+                        name="TRANSFER"
+                        value={activity.TRANSFER}
+                        onChange={(e) => handleInputChange(e, index, "TRANSFER")}
+                        className="border border-gray-300 rounded-md p-2 w-full"
+                        placeholder="Enter transfer details"
+                        required
+                      />
+                    </div>
+
+                    {/* Notes Input */}
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-700">Notes</label>
+                      <textarea
+                        name="notes"
+                        value={activity.notes}
+                        onChange={(e) => handleInputChange(e, index, "notes")}
+                        className="border border-gray-300 rounded-md p-2 w-full"
+                        placeholder="Enter additional notes"
+                        required
+                      />
+                    </div>
+
+                    {/* Places Inputs */}
+                    {activity.places.map((place, placeIndex) => (
+                      <div key={placeIndex} className="mb-4">
+                        <h4 className="text-lg font-medium text-gray-700">Place {placeIndex + 1}</h4>
+
+                        {/* Place Name Input */}
+                        <label className="block text-sm font-medium text-gray-700">
+                          Name
+                          <input
+                            type="text"
+                            value={place.name}
+                            onChange={(e) => handlePlaceChange(e, index, placeIndex, "name")}
+                            className="border border-gray-300 rounded-md p-2 w-full"
+                            placeholder="Enter place name"
+                            required
+                          />
+                        </label>
+
+                        {/* Place Image URL Input */}
+                        <label className="block text-sm font-medium text-gray-700 mt-2">
+                          Image URL
+                          <input
+                            type="text"
+                            value={place.imageUrl}
+                            onChange={(e) => handlePlaceChange(e, index, placeIndex, "imageUrl")}
+                            className="border border-gray-300 rounded-md p-2 w-full"
+                            placeholder="Enter image URL"
+                            required
+                          />
+                        </label>
+                      </div>
+                    ))}
+
+                    <button
+                      type="button"
+                      onClick={() => handleAddMorePlace(index)}
+                      className="bg-blue-500 text-white px-4 py-2 rounded-md mt-4"
+                    >
+                      Add More Places
+                    </button>
+
+                  </div>
+                ))
+              }
+
+              {/* Button to add new Activity */}
+              <button
+                type="button"
+                onClick={handleAddActivity}
+                className="bg-blue-500 text-white px-4 py-2 rounded-md mt-4"
+              >
+                Add Activity
+              </button>
+
+              <div className="flex justify-end space-x-2">
+                <button
+                  type="button"
+                  onClick={closeAddDayPopup}
+                  className="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+                >
+                  Add Day
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Existing Itinerary */}
       {updatedItinerary?.days.map((day, dayIndex) => (
         <div key={dayIndex} className="p-3">
-          <div className="flex items-center space-x-3 p-3 sticky top-0 bg-white">
+          <div className="flex items-center space-x-3 p-3 sticky top-0 z-10 bg-white">
             <span className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
               Day {dayIndex + 1}
             </span>
@@ -716,22 +1192,27 @@ export function PlanContent({ updatedItinerary, setUpdatedItinerary, onThemeEdit
                 </button>
               </>
             )}
-
-            {/* Move Day Up & Down Buttons */}
-            <div className="ml-auto flex space-x-2">
+            <div className="ml-auto">
               <button
-                onClick={() => moveDay(dayIndex, dayIndex - 1)}
+                onClick={() => moveDayUp(dayIndex)}
                 disabled={dayIndex === 0}
-                className="text-gray-600 hover:text-gray-800"
+                className="bg-gray-300 text-gray-600 px-2 py-1 rounded-md mr-2 hover:bg-gray-400 disabled:opacity-50"
               >
-                ⬆ Move Up
+                Move Up
               </button>
               <button
-                onClick={() => moveDay(dayIndex, dayIndex + 1)}
+                onClick={() => moveDayDown(dayIndex)}
                 disabled={dayIndex === updatedItinerary.days.length - 1}
-                className="text-gray-600 hover:text-gray-800"
+                className="bg-gray-300 text-gray-600 px-2 py-1 rounded-md hover:bg-gray-400 disabled:opacity-50"
               >
-                ⬇ Move Down
+                Move Down
+              </button>
+              {/* Delete Day Button */}
+              <button
+                onClick={() => handleDeleteDay(dayIndex)}
+                className="bg-red-500 text-white px-4 py-2 rounded-md ml-2 hover:bg-red-600"
+              >
+                Delete Day
               </button>
             </div>
           </div>
@@ -751,9 +1232,18 @@ export function PlanContent({ updatedItinerary, setUpdatedItinerary, onThemeEdit
                       {activity?.distance && <p className="text-gray-600 mt-2">Distance : {activity?.distance}</p>}
                       {activity?.TRANSFER && <p className="text-gray-600 mt-2">TRANSFER: {activity?.TRANSFER}</p>}
                     </div>
-                    <button onClick={() => handleEdit(dayIndex, activityIndex)} className="text-blue-600 hover:text-blue-800">
-                      <FaEdit size={18} />
-                    </button>
+                    <div className="flex space-x-2">
+                      <button onClick={() => handleEdit(dayIndex, activityIndex)} className="text-blue-600 hover:text-blue-800">
+                        <FaEdit size={18} />
+                      </button>
+                      {/* Delete Activity Button */}
+                      <button
+                        onClick={() => handleDeleteActivity(dayIndex, activityIndex)}
+                        className="text-red-600 hover:text-red-800"
+                      >
+                        <FaTrash size={18} />
+                      </button>
+                    </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4 mt-4">
                     {activity?.places?.map((img, index) => (
@@ -776,8 +1266,7 @@ export function PlanContent({ updatedItinerary, setUpdatedItinerary, onThemeEdit
 
 
 
-
-export  function DayCard() {
+export function DayCard() {
   return (
     <div className="bg-white shadow-lg rounded-lg overflow-hidden border">
       {/* Header */}
@@ -801,9 +1290,9 @@ export  function DayCard() {
 
         <div className="flex">
           {/* Hotel Image */}
-          <img 
-            src="https://cf.bstatic.com/xdata/images/hotel/max1024x768/333333333.jpg?k=example" 
-            alt="Hotel Ibis London" 
+          <img
+            src="https://cf.bstatic.com/xdata/images/hotel/max1024x768/333333333.jpg?k=example"
+            alt="Hotel Ibis London"
             className="w-48 h-32 object-cover rounded-lg border"
           />
 
@@ -837,10 +1326,10 @@ export  function DayCard() {
 }
 
 
-const Itinerary = ({ updatedItinerary,setUpdatedItinerary,onThemeEdit,setActiveTab}) => (
+const Itinerary = ({ updatedItinerary, setUpdatedItinerary, onThemeEdit, setActiveTab }) => (
   <section className="h-[400px] overflow-auto">
-    <TripSummary updatedItinerary={updatedItinerary} setActiveTab={setActiveTab}/>
-    <PlanContent updatedItinerary={updatedItinerary}  setUpdatedItinerary={setUpdatedItinerary} onThemeEdit={onThemeEdit} />
+    <TripSummary updatedItinerary={updatedItinerary} setActiveTab={setActiveTab} />
+    <PlanContent updatedItinerary={updatedItinerary} setUpdatedItinerary={setUpdatedItinerary} onThemeEdit={onThemeEdit} />
   </section>
 );
 
@@ -950,7 +1439,7 @@ export function DayPlan({ updatedItinerary, onUpdate }) {
   );
 }
 
-export function Tabs({setActiveTab,activeTab}) {
+export function Tabs({ setActiveTab, activeTab }) {
 
 
   return (
@@ -984,9 +1473,10 @@ export function Tabs({setActiveTab,activeTab}) {
 
 
 const TourPackage = ({ updatedItinerary, onUpdate }) => {
+
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
-    groupPackage: "Group Package",
+    groupPackage: updatedItinerary?.country,
     people: updatedItinerary.people,
     duration: updatedItinerary.duration,
     staynight: updatedItinerary.staynight,
@@ -998,7 +1488,9 @@ const TourPackage = ({ updatedItinerary, onUpdate }) => {
   // Handle input changes
   const handleChange = (e) => {
     const { name, value } = e.target;
+
     setFormData({ ...formData, [name]: value });
+    // console.log(name)
   };
 
   // Handle stay nights input change
@@ -1014,13 +1506,35 @@ const TourPackage = ({ updatedItinerary, onUpdate }) => {
       return [city, parseInt(nights)];
     });
 
-    // Update formData with parsed staynight
-    const updatedData = {
-      ...formData,
-      staynight: parsedStaynight,
-    };
 
-    onUpdate(updatedData); // Pass updated data to the parent component
+ 
+
+    // Update formData with parsed staynight
+    
+   
+    if(parseInt(formData.duration?.split("Days")[0]) <= updatedItinerary.days.length){
+      const updatedData = {
+        ...formData,
+        staynight: parsedStaynight,
+      };
+      onUpdate(updatedData);
+    
+    }
+    else{
+      const updatedData = {
+        ...formData,
+        staynight: parsedStaynight,
+        duration:updatedItinerary.days.length + "Days"
+      };
+      setFormData((prev) => ({
+        ...prev,
+        duration : updatedItinerary.days.length + " Days",
+      }))
+      onUpdate(updatedData);
+    }
+
+    
+    // Pass updated data to the parent component
     setIsEditing(false); // Exit editing mode
   };
 
@@ -1148,14 +1662,14 @@ const App2 = () => {
   useEffect(() => {
     const fetchImages = async () => {
       const access_id = "8pycO0DRNqhKOn4Z__LcZuBQyHUKQjqN_OoOJbC6tp8";
-  
+
       try {
         // Fetch 10 images for the destination
         const destinationUrl = `https://api.unsplash.com/search/photos?page=1&query=${itineraryData.destination}&per_page=10&client_id=${access_id}`;
         const destinationResponse = await fetch(destinationUrl);
         const destinationData = await destinationResponse.json();
         const destinationImages = destinationData.results.slice(0, 10).map((img) => img.urls.small);
-  
+
         // Fetch images for places in the itinerary
         const updatedDays = await Promise.all(
           itineraryData.days.map(async (day) => ({
@@ -1181,16 +1695,16 @@ const App2 = () => {
             ),
           }))
         );
-  
+
         setUpdatedItinerary({ ...itineraryData, destinationImage: destinationImages, days: updatedDays });
       } catch (error) {
         console.error("Error fetching images:", error);
       }
     };
-  
+
     fetchImages();
   }, [itineraryData]);
-  
+
 
   const handleThemeEdit = (dayIndex, newTheme) => {
     const updatedDays = [...updatedItinerary.days];
@@ -1199,6 +1713,7 @@ const App2 = () => {
   };
 
   const handleImageUpdate = (updatedImages) => {
+
     setUpdatedItinerary((prev) => ({
       ...prev,
       destinationImage: updatedImages,
@@ -1206,13 +1721,43 @@ const App2 = () => {
   };
 
   const handleTourPackageUpdate = (updatedData) => {
+    const updatedDays = [...updatedItinerary.days];
+
+     let value = parseInt(updatedData.duration.split("Days")[0].trim(), 10);
+   
+   if(value <= updatedDays.length){
+    // Select the first `value - 1` items to leave space for the last day
+    let daysSelected = updatedDays.slice(0, value - 1);
+    
+    // Ensure the last item is included (without duplication)
+   
+    if (updatedDays.length > value) {
+      daysSelected.push(updatedDays[updatedDays.length - 1]);
+    }
+    
+
     setUpdatedItinerary((prev) => ({
       ...prev,
       people: updatedData.people,
       duration: updatedData.duration,
       staynight: updatedData.staynight,
+      days: daysSelected,
     }));
+   }
+
+
+   else{
+    
+    setUpdatedItinerary((prev) => ({
+      ...prev,
+      people: updatedData.people,
+      duration: updatedDays.length,
+      staynight: updatedData.staynight,
+    }));
+   }
+    // Assuming updatedData.duration is in the format like "3 Days" 
   };
+
   const handleDayPlanUpdate = (updatedDays) => {
     setUpdatedItinerary((prev) => ({
       ...prev,
@@ -1228,24 +1773,24 @@ const App2 = () => {
   const handleUpdatePolice = (updatedData) => {
     setUpdatedItinerary(updatedData);
   };
-  console.log(activeTab)
+
 
   return (
     <>
       <div className="bg-gray-200 min-h-screen ">
         {/* <SearchBar /> */}
-        <TourPackage updatedItinerary={updatedItinerary}  onUpdate={handleTourPackageUpdate}/>
+        <TourPackage updatedItinerary={updatedItinerary} onUpdate={handleTourPackageUpdate} />
         <div className="bg-white">
-          <Banner updatedItinerary={updatedItinerary} onImageUpdate={handleImageUpdate}/>
-          <Tabs setActiveTab={setActiveTab} activeTab={activeTab}/>
+          <Banner updatedItinerary={updatedItinerary} onImageUpdate={handleImageUpdate} />
+          <Tabs setActiveTab={setActiveTab} activeTab={activeTab} />
         </div>
         <div className="flex mt-5 p-4 pt-0 pr-0   nnn  bg-white  shadow-md rounded-md mx-5">
           <div className="w-[12%] border-r-[1px] pt-4">
-            <DayPlan updatedItinerary={updatedItinerary} onUpdate={handleDayPlanUpdate}/>
+            <DayPlan updatedItinerary={updatedItinerary} onUpdate={handleDayPlanUpdate} />
           </div>
           <div className="w-[88%]">
             {
-              activeTab =="itinerary" ?  <Itinerary updatedItinerary={updatedItinerary} setUpdatedItinerary={setUpdatedItinerary} setActiveTab={setActiveTab}  onThemeEdit={handleThemeEdit} />:  activeTab=="summary" ?  <TableSummary updatedItinerary={updatedItinerary}  onUpdate={handleUpdate}/> : activeTab=="policies" ?<Policies  updatedItinerary={updatedItinerary} onUpdate={handleUpdatePolice} /> : activeTab=="hotels" ? <DayCard/> :null  
+              activeTab == "itinerary" ? <Itinerary updatedItinerary={updatedItinerary} setUpdatedItinerary={setUpdatedItinerary} setActiveTab={setActiveTab} onThemeEdit={handleThemeEdit} /> : activeTab == "summary" ? <TableSummary updatedItinerary={updatedItinerary} onUpdate={handleUpdate} /> : activeTab == "policies" ? <Policies updatedItinerary={updatedItinerary} onUpdate={handleUpdatePolice} /> : activeTab == "hotels" ? <DayCard /> : null
             }
           </div>
         </div>
@@ -1256,5 +1801,9 @@ const App2 = () => {
 };
 
 export default App2;
+
+
+
+
 
 
